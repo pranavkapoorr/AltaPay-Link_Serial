@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+   <Console name="Console" target="SYSTEM_OUT">
+   <PatternLayout>
+   <pattern>%-5level-> %logger (%F:%L) - %msg%n%throwable</pattern>
+   </PatternLayout>
+    </Console>
+      <File name="MyFile" fileName="logs/${date:yyyyMMdd}_IPS-LINK.log" immediateFlush="true" append="true" ignoreExceptions="false">
+            <PatternLayout>
+            <header>=====================Start------of-------Log==================%n</header>
+            <pattern>%-5level-> %d %logger{36} - %msg%n%throwable</pattern>
+            <footer>=====================END------of-------Log==================%n</footer>  
+            </PatternLayout>
+        </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="IPS" level="INFO"/>
+    <Root level="ALL">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="MyFile"/>
+    </Root>
+  </Loggers>
+</Configuration>
