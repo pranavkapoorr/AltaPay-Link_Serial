@@ -16,7 +16,7 @@ public class SharedResources {
     }
     public static synchronized boolean isValidCOMPort(String value){
         boolean result = false;
-        result = !value.isEmpty() && value!= null && (value.equals("COM1")||value.equals("COM2")||value.equals("COM3")||value.equals("COM4")||value.equals("COM5")) && value.length() < 5;
+        result = !value.isEmpty() && value!= null && (value.equals("COM1")||value.equals("COM2")||value.equals("COM3")||value.equals("COM4")||value.equals("COM5")||value.equals("COM6")||value.equals("COM7")) && value.length() < 5;
         return result;
     }
     public static synchronized boolean isValidIP (String ip) {

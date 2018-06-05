@@ -96,7 +96,7 @@ public class SSLTcpActor extends AbstractActor{
 			 final char[] password = "123456".toCharArray();// do not store passwords in code, read them from somewhere safe!	
 			 final KeyStore ks = KeyStore.getInstance("JKS");  
 			 log.info(getSelf().path().name()+" loading keystore...");
-			 final InputStream keystore = new FileInputStream("resources/truststore.jks");
+			 final InputStream keystore = new FileInputStream("configs/ssl/truststore.jks");
 			      if(keystore == null) {
 			    	  log.fatal(getSelf().path().name()+" KEYSTORE NOT FOUND...!!!");
 			    	  throw new RuntimeException("Keystore required!");

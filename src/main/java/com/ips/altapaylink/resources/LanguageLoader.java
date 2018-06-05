@@ -15,7 +15,7 @@ public class LanguageLoader {
         Properties config = new Properties();  
             InputStream in;
             try {
-                in = new FileInputStream("configs/language.properties");
+                in = new FileInputStream("configs/languages/language.properties");
                 config.load(in);
                 log.trace("loading languages..");
                 in.close();
