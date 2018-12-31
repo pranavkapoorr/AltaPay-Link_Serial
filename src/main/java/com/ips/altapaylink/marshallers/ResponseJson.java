@@ -9,8 +9,6 @@ public class ResponseJson {
     private String transactionStatus;
     @JsonProperty
     private String transactionStatusText;
-   // @JsonProperty
-   // private String aquirerCode;
     @JsonProperty
     private String STAN;
     @JsonProperty

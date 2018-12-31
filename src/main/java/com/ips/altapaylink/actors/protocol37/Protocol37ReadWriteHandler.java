@@ -17,10 +17,14 @@ public class Protocol37ReadWriteHandler extends AbstractActor{
 	private int CYCLE=1;
 	private boolean enableSSL = true;
 	private Protocol37ReadWrite p37resources;
-	public static Props props(ActorRef statusMessageListener, ActorRef receiptGenerator){
-		return Props.create(Protocol37ReadWriteHandler.class , statusMessageListener, receiptGenerator);
+	private final ActorRef communicationActor;
+	private final String clientIp;
+	public static Props props(ActorRef communicationActor, ActorRef statusMessageListener, ActorRef receiptGenerator, String clientIp){
+		return Props.create(Protocol37ReadWriteHandler.class ,communicationActor, statusMessageListener, receiptGenerator, clientIp);
 	}
-	public Protocol37ReadWriteHandler(ActorRef statusMessageListener, ActorRef receiptGenerator) {
+	public Protocol37ReadWriteHandler(ActorRef communicationActor, ActorRef statusMessageListener, ActorRef receiptGenerator, String clientIp) {
+		this.communicationActor = communicationActor;
+		this.clientIp = clientIp;
 		this.receiptGenerator = receiptGenerator;
 		this.statusMessageSender = statusMessageListener;
 
@@ -54,7 +58,7 @@ public class Protocol37ReadWriteHandler extends AbstractActor{
 					else if(p37resources.isProtocol37ApplicationMessage(log, getSelf(), msg)){ //if receipt message
 						/** every STX ETX message received and sent requires ACK or Nack from the counter party so that Next Message can be sent 
 						 * getsender() is the Serial Manager Actor who sends message to this Actor so Ack message is sent back to it**/
-						getSender().tell(new Protocol37Format(Protocol37UnformattedMessage.ACK()),getSelf());
+						communicationActor.tell(new Protocol37Format(Protocol37UnformattedMessage.ACK()),getSelf());
 						String message = msg.substring(msg.indexOf((char)02)+1,msg.indexOf((char)03));
 						log.info(getSelf().path().name()+" Result: " + message);
 
@@ -88,7 +92,7 @@ public class Protocol37ReadWriteHandler extends AbstractActor{
 							/** closes the SSL-tcp-actor **/ 
 							getContext().stop(tcpGT);
 							/** sending CLOSELINE CONFIRMATION message to the terminal **/ 
-							getContext().getParent().tell(new Protocol37Format(Protocol37UnformattedMessage.closeLine(terminalIdX,"00")), getSelf());//sending closing confirmation
+							communicationActor.tell(new Protocol37Format(Protocol37UnformattedMessage.closeLine(terminalIdX,"00")), getSelf());//sending closing confirmation
 						}
 					}else{
 						/**SENDING nack**/
@@ -119,7 +123,7 @@ public class Protocol37ReadWriteHandler extends AbstractActor{
 							log.trace("ENQ received from GT");
 							//	ENQ_received ++;
 							/** as ENQ received now sending LINE OPENING CONFIRMATION message to terminal **/
-							getContext().getParent().tell(new Protocol37Format(Protocol37UnformattedMessage.openLine(terminalIdX,"00")), getSelf());
+							communicationActor.tell(new Protocol37Format(Protocol37UnformattedMessage.openLine(terminalIdX,"00")), getSelf());
 						}
 						/** checks if the received message from GT is ACK with ACK bit **/
 						else if(p37resources.isACK_GT(messageFromGT)){
@@ -136,7 +140,7 @@ public class Protocol37ReadWriteHandler extends AbstractActor{
 						//log.info(" encodeding: "+(messageFromGT));
 						log.info("message for PED in Hex->:\n"+p37resources.prettyOut(msg));
 						/** encodes the message with "@@@@lenlenlenlenMessage" format and is sent to Terminal **/
-						getContext().getParent().tell(new GT37Message(p37resources.encodeForTerminal(msg)), getSelf());
+						communicationActor.tell(new GT37Message(p37resources.encodeForTerminal(msg)), getSelf());
 					}
 				}).build();
 	}

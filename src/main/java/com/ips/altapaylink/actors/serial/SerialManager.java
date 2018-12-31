@@ -3,8 +3,6 @@ package com.ips.altapaylink.actors.serial;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.*;
 import com.ips.altapaylink.actormessages.*;
-import com.ips.altapaylink.actors.convertor.Link;
-import com.ips.altapaylink.actors.protocol37.Protocol37ReadWriteHandler;
 import com.ips.altapaylink.protocol37.Protocol37UnformattedMessage;
 import akka.actor.*;
 import akka.util.ByteString;
@@ -13,20 +11,21 @@ import jssc.*;
 public class SerialManager extends AbstractActor {
 	private final static Logger log = LogManager.getLogger(SerialManager.class); 
 	private final SerialPort port;
-	private ActorRef handler;
 	private boolean ackReceived;
     private boolean sentApplicationMessage = false;
     private int retryCycle = 0;
     private int gtMessageRetryCycle = 0;
+    private final String clientIp;
+    private ActorRef handler;
 	
-	public static Props props(ActorRef statusMessageListener, ActorRef receiptGenerator, String port , String clientIp) {
-        return Props.create(SerialManager.class, statusMessageListener, receiptGenerator, port, clientIp);
+	public static Props props(String port , String clientIp) {
+        return Props.create(SerialManager.class, port, clientIp);
     }
-	private SerialManager(ActorRef statusMessageListener, ActorRef receiptGenerator, String port , String clientIp) {
+	private SerialManager(String port , String clientIp) {
 		this.port =  new SerialPort(port);
+		this.clientIp = clientIp;
 		log.info("starting handler");
-        this.handler = getContext().actorOf(Protocol37ReadWriteHandler.props(statusMessageListener, receiptGenerator));
-		ackReceived = true;
+        ackReceived = true;
         log.info("ackReceived set to allow first message to be sent to terminal");
 	}
 	
@@ -38,12 +37,12 @@ public class SerialManager extends AbstractActor {
 				}catch (SerialPortException e) {
 					log.fatal(e.getMessage());
 					log.fatal("CHECK IF THE DEVICE CONNECTED TO PORT MENTIONED IN PROPERTIES FILE OR IF THE PORT MENTIONED IS CORRECT..!!");
-					System.exit(0);
+					
 					//preStart();
 				}
 				port.setParams(SerialPort.BAUDRATE_9600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
 				log.info("configured and opened port :" +port.getPortName());
-				Link.sendToTerminal = true;
+				getContext().getParent().tell(new SendToTerminal(true), getSelf());//ready to send message as connected to terminal
 				getContext().actorOf(SerialListener.props(port)).tell("start", getSelf());
 	}
 	
@@ -133,7 +132,7 @@ public class SerialManager extends AbstractActor {
 					
 				}).match(byte[].class, msg->{
 					log.info("forwarding GT msg to handler");
-					this.handler.tell(msg, getSelf());
+					this.handler.tell(msg,getSelf());
 			}).match(String.class, msg->{
 					//	log.info("received in serial: " + msg);
 						 if(msg.equalsIgnoreCase(Protocol37UnformattedMessage.ACK())){
@@ -141,7 +140,8 @@ public class SerialManager extends AbstractActor {
 		            		   ackReceived = true;// stating that msg can be sent now as ack has been received for last sent msg
 		            	   }
 						log.info("forwarding to handler");
-						this.handler.tell(msg, getSelf());
+						this.handler = getContext().actorFor("../p37Handler-"+clientIp);
+		            	   this.handler.tell(msg,getSelf());
 				}).build();
 	}
 	@Override

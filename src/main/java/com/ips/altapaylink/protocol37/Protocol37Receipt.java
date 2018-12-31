@@ -1,24 +1,22 @@
 package com.ips.altapaylink.protocol37;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-
+import java.util.*;
 import org.apache.logging.log4j.Logger;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ips.altapaylink.actormessages.FinalReceipt;
-import com.ips.altapaylink.actors.convertor.Link;
 import com.ips.altapaylink.marshallers.ResponseJson;
-
 import akka.actor.AbstractActor.ActorContext;
 import akka.actor.ActorRef;
 
 public class Protocol37Receipt {
+	private final boolean isLastTransStatus;
+	
+	public Protocol37Receipt(boolean isLastTransStatus) {
+		this.isLastTransStatus = isLastTransStatus;
+	}
     private static char newLine = (char)10;
     /**checks if receipt need to be signed finding dots and shouldn't be receipt copy**/
     private boolean requiresSignature(String receipt){
@@ -101,7 +99,7 @@ public class Protocol37Receipt {
             receiptX.setSignatureRequired("Y");
         }
         /**checks if it is the last trans status operation**/
-        if(Link.isLastTransStatus){
+        if(isLastTransStatus){
              receiptX = lastTransStatus(languageDictionary,receiptX.getReceipt()); 
         }
         String out = mapper.writeValueAsString(receiptX);

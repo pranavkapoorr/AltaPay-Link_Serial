@@ -21,11 +21,13 @@ import scala.concurrent.duration.Duration;
 public class TcpConnectionHandlerActor extends AbstractActor {
 
 	private final static Logger log = LogManager.getLogger(TcpConnectionHandlerActor.class); 
-	private String clientIP;
+	private final String clientIP;
 	private ActorRef sender;
 	private ActorRef IPS;
 	private volatile boolean ipsTerminated;
-	final HashMap<String, ArrayList<String>> languageDictionary;
+	private boolean receiptGenerated;
+	private final HashMap<String, ArrayList<String>> languageDictionary;
+	
 	public TcpConnectionHandlerActor(String clientIP,HashMap<String, ArrayList<String>> languageDictionary) {
 	    this.languageDictionary = languageDictionary;
 		this.clientIP = clientIP;
@@ -142,8 +144,8 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 				.match(ReceiveTimeout.class, r -> {
 					if(!ipsTerminated){
 						log.debug(getSelf().path().name()+" TIMEOUT.....!!");
-						if(Link.receiptGenerated){
-						    Link.cardRemoved = true;
+						if(this.receiptGenerated){
+						    IPS.tell(new CardRemoved(true), getSelf());//sets cardRemoved to true to let the final receipt print at timeout
 	                       }else{
 	                           SharedResources.sendNack(log,getSelf(),"09","Timeout..!!", false);
 	                           IPS.tell(PoisonPill.getInstance(), sender);//killing ips actor
@@ -163,6 +165,8 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 				.match(Terminated.class,s->{
 					ipsTerminated = s.existenceConfirmed();
 				})
+				//checks if receipt generated
+				.match(ReceiptGenerated.class,rG->this.receiptGenerated = rG.receiptGenerated())
 				.build();
 	}
 

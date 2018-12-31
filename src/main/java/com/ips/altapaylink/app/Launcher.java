@@ -16,7 +16,7 @@ public class Launcher {
 	public static void main(String[] args) throws InterruptedException  {
 		if(SharedResources.isValidIP(args[0]) && SharedResources.isValidPort(args[1])){
 		    Config config = ConfigFactory.load("application.conf");
-			ActorSystem system= ActorSystem.create("IPS-SYSTEM",config);
+			ActorSystem system = ActorSystem.create("IPS-SYSTEM",config);
 			ActorRef tcpMnager =Tcp.get(system).manager();
 			ActorRef tcpServer= system.actorOf(TcpServerActor.props(tcpMnager ,new InetSocketAddress(args[0], Integer.parseInt(args[1]))),"SERVER");
 		}else{
