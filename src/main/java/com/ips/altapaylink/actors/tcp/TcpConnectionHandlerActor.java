@@ -25,7 +25,7 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 	private ActorRef sender;
 	private ActorRef IPS;
 	private volatile boolean ipsTerminated;
-	private boolean receiptGenerated;
+	private boolean receiptGenerated, isCardOperation;
 	private final HashMap<String, ArrayList<String>> languageDictionary;
 	
 	public TcpConnectionHandlerActor(String clientIP,HashMap<String, ArrayList<String>> languageDictionary) {
@@ -42,6 +42,7 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 	    log.trace("=============================START---OF---LOG================================");
 		log.trace(getSelf().path().name()+" starting tcp-handler");
 		ipsTerminated = false;
+		isCardOperation = false;
 	}
 
 	@Override
@@ -63,6 +64,9 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 									log.trace(getSelf().path().name()+" Incoming Json Validated..!");
 									InetSocketAddress statusMessageAddress;
 									String port;
+									if(resourceMap.get("operationType").equals("Payment")||resourceMap.get("operationType").equals("Refund")||resourceMap.get("operationType").equals("Reversal")) {
+										this.isCardOperation = true;
+									}
 									if(SharedResources.isValidCOMPort(resourceMap.get("pedPort"))){		
 										port = resourceMap.get("pedPort");
 										if(SharedResources.isValidIP(resourceMap.get("statusMessageIp")) && SharedResources.isValidPort(resourceMap.get("statusMessagePort"))){
@@ -125,10 +129,20 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 				.match(FinalReceipt.class, receipt->{
 					log.info(getSelf().path().name()+" sending out FINAL RECEIPT to "+clientIP.toString());
 					sender.tell(TcpMessage.write(ByteString.fromString(receipt.getReceipt())), getSelf());
-					context().system().stop(IPS);
+					if(!isCardOperation) {
+						log.info(getSelf().path().name()+"finishing operation as non card transaction....");
+						context().system().stop(IPS);
+					}
 				}).match(StatusMessage.class, statusMessage->{
 					log.info(getSelf().path().name()+" sending out statusMessage to "+clientIP.toString());
 					sender.tell(TcpMessage.write(ByteString.fromString(statusMessage.getStatusMessage())), getSelf());
+					if(statusMessage.getStatusMessage().contains("CARD REMOVED")){
+						if(!receiptGenerated) {
+							log.info(getSelf().path().name()+" receipt not generated so waiting for 500ms");
+							TimeUnit.MILLISECONDS.sleep(500);
+						}
+						context().system().stop(IPS);//kills connection when card removed
+					}
 				}).match(FailedAttempt.class, failedMessage->{
 					log.info(getSelf().path().name()+" sending out FAILURE to "+clientIP.toString());
 					sender.tell(TcpMessage.write(ByteString.fromString(failedMessage.getMessage())), getSelf());
