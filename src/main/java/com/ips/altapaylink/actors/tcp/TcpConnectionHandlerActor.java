@@ -141,10 +141,7 @@ public class TcpConnectionHandlerActor extends AbstractActor {
 					log.info(getSelf().path().name()+" sending out statusMessage to "+clientIP.toString());
 					sender.tell(TcpMessage.write(ByteString.fromString(statusMessage.getStatusMessage())), getSelf());
 					if(statusMessage.getStatusMessage().contains("CARD REMOVED")){
-						if(!receiptGenerated) {
-							log.info(getSelf().path().name()+" receipt not generated so waiting for 700ms");
-							TimeUnit.MILLISECONDS.sleep(700);
-						}
+						TimeUnit.MILLISECONDS.sleep(300);//to enable ips actor to send out receipt before being terminated
 						context().system().stop(IPS);//kills connection when card removed
 						ipsTerminated = true;
                         isCardOperation = false;

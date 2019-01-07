@@ -34,16 +34,18 @@ public class SerialManager extends AbstractActor {
 			try{	
 				log.info("opening port: "+port.getPortName());
 				port.openPort();
-				}catch (SerialPortException e) {
-					log.fatal(e.getMessage());
-					log.fatal("CHECK IF THE DEVICE CONNECTED TO PORT MENTIONED IN PROPERTIES FILE OR IF THE PORT MENTIONED IS CORRECT..!!");
-					
-					//preStart();
-				}
 				port.setParams(SerialPort.BAUDRATE_9600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
 				log.info("configured and opened port :" +port.getPortName());
 				getContext().getParent().tell(new SendToTerminal(true), getSelf());//ready to send message as connected to terminal
 				getContext().actorOf(SerialListener.props(port)).tell("start", getSelf());
+				}catch (SerialPortException e) {
+					log.fatal(e.getMessage());
+					log.fatal("CHECK IF The PORT MENTIONED IS CORRECT..!!");
+					getContext().getParent().tell(new FailedAttempt("{\"errorCode\":\"03\",\"errorText\":\"Error -> CHECK PED CONNECTIVITY AND PORT WHERE CONNECTED\"}"), getSelf());
+					getContext().stop(getSelf());
+					//preStart(); 
+				}
+				
 	}
 	
 	@Override

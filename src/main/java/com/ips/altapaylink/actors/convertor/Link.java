@@ -34,7 +34,7 @@ public class Link extends AbstractActor {
 		this.statusMessageIp = statusMessageIp;
 		this.languageDictionary = languageDictionary;
 		this.p37 = new Protocol37(log, getSelf());
-		this.communicationActor =  getContext().actorOf(SerialManager.props(port, clientIp),"TcpClient-"+clientIp);
+		this.communicationActor =  getContext().actorOf(SerialManager.props(port, clientIp),"Serial-"+clientIp);
 	}
 
 	@Override
