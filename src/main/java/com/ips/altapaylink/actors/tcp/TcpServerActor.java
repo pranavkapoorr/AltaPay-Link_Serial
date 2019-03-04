@@ -27,7 +27,7 @@ public class TcpServerActor  extends AbstractActor {
     private TcpServerActor(ActorRef manager,InetSocketAddress serverAddress) {
         this.languageDictionary = LanguageLoader.loadLanguages(log);
         this.manager = manager;
-        log.trace("starting TCP Server");
+        log.trace("starting AltaPay-Link USB/SERIAL v0.1");
         manager.tell(TcpMessage.bind(getSelf(),serverAddress,100), getSelf());
     }
 
